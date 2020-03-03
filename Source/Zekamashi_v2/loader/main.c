@@ -4,9 +4,9 @@
 *
 *  TITLE:       MAIN.C
 *
-*  VERSION:     2.00
+*  VERSION:     2.01
 *
-*  DATE:        24 Jan 2020
+*  DATE:        02 Mar 2020
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -427,6 +427,9 @@ int VBoxLdrMain(
             //
             // Custom table.
             //
+
+            RtlSecureZeroMemory(szParameter, sizeof(szParameter));
+
             if (supGetCommandLineOption(TEXT("/c"),
                 TRUE,
                 szParameter,
